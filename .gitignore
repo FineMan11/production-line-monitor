@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Database (contains real production data)
+instance/
+*.db
+
+# Environment
+.env
+venv/
+env/
+
+# Helper/setup scripts
+add_handlers.py

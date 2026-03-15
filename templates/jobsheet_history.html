@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Job Sheet History - {{ tester.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="{{ url_for('jobsheet', tester_id=tester.id) }}" class="back-link">&larr; Current Sheet</a>
+    <h2>Job Sheet History &mdash; {{ tester.name }}</h2>
+</div>
+
+{% if sheets %}
+<div class="admin-table-wrapper">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Shift</th>
+                <th>Entries</th>
+                <th>Unproductive Records</th>
+                <th>Status</th>
+                <th>Closed At</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in sheets %}
+            <tr>
+                <td>{{ s.date.strftime('%d %b %Y') }}</td>
+                <td>{{ 'Morning' if s.shift == 'morning' else 'Night' }}</td>
+                <td>{{ s.rio_entries | length }}</td>
+                <td>{{ s.unproductive_entries | length }}</td>
+                <td>
+                    {% if s.is_completed %}
+                        <span class="completed-badge">Completed</span>
+                    {% else %}
+                        <span class="open-badge">Open</span>
+                    {% endif %}
+                </td>
+                <td>{{ s.closed_at.strftime('%H:%M') if s.closed_at else '—' }}</td>
+                <td>
+                    <a href="{{ url_for('jobsheet', tester_id=tester.id) }}?sheet_id={{ s.id }}"
+                       class="btn btn-sm btn-secondary">View</a>
+                    <a href="{{ url_for('print_jobsheet', sheet_id=s.id) }}"
+                       target="_blank" class="btn btn-sm btn-secondary">&#128438; Print</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="no-data">No job sheets yet for {{ tester.name }}.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}Job Sheet - {{ tester.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="{{ url_for('dashboard') }}" class="back-link">&larr; Dashboard</a>
+    <h2>Job Sheet &mdash; {{ tester.name }}</h2>
+    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:6px;">
+        <span class="shift-badge shift-{{ sheet.shift }}">
+            {{ 'Morning Shift (0700–1900)' if sheet.shift == 'morning' else 'Night Shift (1900–0700)' }}
+        </span>
+        <span class="sheet-date">{{ sheet.date.strftime('%d %b %Y') }}</span>
+        {% if sheet.is_completed %}
+            <span class="completed-badge">&#10003; Completed</span>
+        {% else %}
+            <span class="open-badge">Open</span>
+        {% endif %}
+        <a href="{{ url_for('jobsheet_history', tester_id=tester.id) }}" class="btn btn-sm btn-secondary">
+            Past Sheets
+        </a>
+        <a href="{{ url_for('print_jobsheet', sheet_id=sheet.id) }}" target="_blank"
+           class="btn btn-sm btn-secondary">&#128438; Print</a>
+        {% if not sheet.is_completed %}
+        <form method="POST" action="{{ url_for('close_jobsheet', sheet_id=sheet.id) }}"
+              onsubmit="return confirm('Close this job sheet? It will be marked as completed.')">
+            <button type="submit" class="btn btn-sm btn-danger">Close Sheet</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 3-hour reminder banner -->
+{% if mins_since is none %}
+<div class="reminder-banner reminder-due">
+    &#9888; No entries yet for this shift. Please fill in the job sheet.
+</div>
+{% elif mins_since >= 180 %}
+<div class="reminder-banner reminder-due">
+    &#9888; Last entry was {{ mins_since // 60 }}h {{ mins_since % 60 }}m ago. Job sheet update is due!
+</div>
+{% elif mins_since >= 150 %}
+<div class="reminder-banner reminder-soon">
+    &#9200; Last entry {{ mins_since // 60 }}h {{ mins_since % 60 }}m ago. Next update due soon.
+</div>
+{% else %}
+<div class="reminder-banner reminder-ok">
+    &#10003; Last entry {{ mins_since // 60 }}h {{ mins_since % 60 }}m ago. Next update in
+    {{ (180 - mins_since) // 60 }}h {{ (180 - mins_since) % 60 }}m.
+</div>
+{% endif %}
+
+<!-- ══════════════════════════════════════════════════════════
+     TABLE 1 — RIO DAILY JOB SHEET
+     ══════════════════════════════════════════════════════════ -->
+<div class="js-section">
+    <h3 class="js-section-title">RIO Daily Job Sheet</h3>
+    <p class="js-section-note">
+        Tester: <strong>{{ tester.name }}</strong>
+        &nbsp;|&nbsp; Handler: <strong>{{ tester.handler.name if tester.handler and not tester.handler.is_offline else '—' }}</strong>
+    </p>
+
+    <div class="table-wrapper">
+        <table class="js-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Flow</th>
+                    <th>Site</th>
+                    <th>Total</th>
+                    <th>Untested</th>
+                    <th>Total Good</th>
+                    <th>Total Tested</th>
+                    <th>Device Size</th>
+                    <th>Submitted By</th>
+                    <th>Submitted At</th>
+                    {% if not sheet.is_completed %}<th></th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in sheet.rio_entries %}
+                <tr>
+                    <td><strong>{{ e.entry_time }}</strong></td>
+                    <td>{{ e.flow or '—' }}</td>
+                    <td>{{ e.site or '—' }}</td>
+                    <td>{{ e.total or '—' }}</td>
+                    <td>{{ e.untested if e.untested is not none else '—' }}</td>
+                    <td>{{ e.total_good if e.total_good is not none else '—' }}</td>
+                    <td>{{ e.total_tested if e.total_tested is not none else '—' }}</td>
+                    <td>{{ e.device_size or '—' }}</td>
+                    <td>{{ e.submitted_by or '—' }}</td>
+                    <td>{{ e.submitted_at.strftime('%H:%M') }}</td>
+                    {% if not sheet.is_completed %}
+                    <td>
+                        <form method="POST"
+                              action="{{ url_for('delete_rio_entry', sheet_id=sheet.id, entry_id=e.id) }}"
+                              onsubmit="return confirm('Remove this entry?')">
+                            <button type="submit" class="btn btn-sm btn-danger">&#128465;</button>
+                        </form>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% else %}
+                <tr><td colspan="11" class="no-data">No entries yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if not sheet.is_completed %}
+    <div class="js-add-form">
+        <h4>Add Entry</h4>
+        <form method="POST" action="{{ url_for('add_rio_entry', sheet_id=sheet.id) }}" class="entry-form">
+            <div class="entry-grid">
+                <div class="form-group">
+                    <label>Time <span class="req">*</span></label>
+                    <input type="number" name="entry_time" class="form-control" placeholder="e.g. 1000"
+                           min="0" max="2359" required>
+                </div>
+                <div class="form-group">
+                    <label>Flow</label>
+                    <input type="text" name="flow" class="form-control" placeholder="e.g. Felt, Q025">
+                </div>
+                <div class="form-group">
+                    <label>Site</label>
+                    <input type="text" name="site" class="form-control" placeholder="e.g. 8">
+                </div>
+                <div class="form-group">
+                    <label>Total</label>
+                    <input type="text" name="total" class="form-control" placeholder="e.g. 63">
+                </div>
+                <div class="form-group">
+                    <label>Untested</label>
+                    <input type="number" name="untested" class="form-control" placeholder="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Total Good</label>
+                    <input type="number" name="total_good" class="form-control" placeholder="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Total Tested</label>
+                    <input type="number" name="total_tested" class="form-control" placeholder="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Device Size</label>
+                    <input type="text" name="device_size" class="form-control" placeholder="e.g. 4x4">
+                </div>
+                <div class="form-group">
+                    <label>Your Name / Badge</label>
+                    <input type="text" name="submitted_by" class="form-control" placeholder="e.g. KR2524">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Entry</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TABLE 2 — TOTAL UNPRODUCTIVE TIME
+     ══════════════════════════════════════════════════════════ -->
+<div class="js-section">
+    <h3 class="js-section-title">Total Unproductive Time</h3>
+
+    <div class="table-wrapper">
+        <table class="js-table">
+            <thead>
+                <tr>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Total Time</th>
+                    <th>Down Time Details</th>
+                    <th>Action Taken</th>
+                    <th>Resp. Tech</th>
+                    {% if not sheet.is_completed %}<th></th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in sheet.unproductive_entries %}
+                <tr>
+                    <td>{{ e.from_time }}</td>
+                    <td>{{ e.to_time or '—' }}</td>
+                    <td>{{ e.total_time_str }}</td>
+                    <td>{{ e.details or '—' }}</td>
+                    <td>{{ e.action_taken or '—' }}</td>
+                    <td>{{ e.resp_tech or '—' }}</td>
+                    {% if not sheet.is_completed %}
+                    <td>
+                        <form method="POST"
+                              action="{{ url_for('delete_unproductive', sheet_id=sheet.id, entry_id=e.id) }}"
+                              onsubmit="return confirm('Remove this entry?')">
+                            <button type="submit" class="btn btn-sm btn-danger">&#128465;</button>
+                        </form>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="no-data">No unproductive time recorded.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if not sheet.is_completed %}
+    <div class="js-add-form">
+        <h4>Add Unproductive Time</h4>
+        <form method="POST" action="{{ url_for('add_unproductive', sheet_id=sheet.id) }}" class="entry-form">
+            <div class="entry-grid">
+                <div class="form-group">
+                    <label>From <span class="req">*</span></label>
+                    <input type="number" name="from_time" class="form-control" placeholder="e.g. 1202"
+                           min="0" max="2359" required>
+                </div>
+                <div class="form-group">
+                    <label>To</label>
+                    <input type="number" name="to_time" class="form-control" placeholder="e.g. 1430"
+                           min="0" max="2359">
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Down Time Details</label>
+                    <input type="text" name="details" class="form-control"
+                           placeholder="e.g. UP Chuck Site 4 CH016">
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Action Taken</label>
+                    <input type="text" name="action_taken" class="form-control"
+                           placeholder="e.g. Clean Socket / Swap Socket">
+                </div>
+                <div class="form-group">
+                    <label>Resp. Tech (Badge No.)</label>
+                    <input type="text" name="resp_tech" class="form-control" placeholder="e.g. KR2524">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Entry</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

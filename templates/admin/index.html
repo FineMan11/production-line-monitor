@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel - Production Monitor{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="{{ url_for('dashboard') }}" class="back-link">&larr; Dashboard</a>
+    <h2>Admin Panel</h2>
+    <p>Logged in as <strong>{{ current_user.username }}</strong></p>
+</div>
+
+<div class="admin-grid">
+    <a href="{{ url_for('admin_stations') }}" class="admin-card">
+        <div class="admin-card-icon">&#128187;</div>
+        <div class="admin-card-title">Stations / Testers</div>
+        <div class="admin-card-desc">Add, edit, or remove tester stations</div>
+    </a>
+    <a href="{{ url_for('admin_handlers') }}" class="admin-card">
+        <div class="admin-card-icon">&#128295;</div>
+        <div class="admin-card-title">Handlers</div>
+        <div class="admin-card-desc">Add handlers and assign them to stations</div>
+    </a>
+    <a href="{{ url_for('admin_locations') }}" class="admin-card">
+        <div class="admin-card-icon">&#128205;</div>
+        <div class="admin-card-title">Locations</div>
+        <div class="admin-card-desc">Manage production line zones/sections</div>
+    </a>
+    <a href="{{ url_for('admin_statuses') }}" class="admin-card">
+        <div class="admin-card-icon">&#127381;</div>
+        <div class="admin-card-title">Statuses</div>
+        <div class="admin-card-desc">Add or edit status types and colors</div>
+    </a>
+    <a href="{{ url_for('admin_users') }}" class="admin-card">
+        <div class="admin-card-icon">&#128100;</div>
+        <div class="admin-card-title">Users</div>
+        <div class="admin-card-desc">Manage admin and operator accounts</div>
+    </a>
+</div>
+{% endblock %}

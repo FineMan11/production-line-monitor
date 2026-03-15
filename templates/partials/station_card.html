@@ -1,0 +1,55 @@
+{% set duration_minutes = none %}
+{% if tester.status_since %}
+    {% set delta = (now - tester.status_since).total_seconds() | int %}
+    {% set duration_minutes = (delta // 60) %}
+{% endif %}
+
+<div class="station-card"
+     id="card-{{ tester.id }}"
+     style="border-top: 5px solid {{ tester.current_status.color if tester.current_status else '#6c757d' }};"
+     onclick="openModal({{ tester.id }}, '{{ tester.name }}')">
+
+    <div class="card-header">
+        <span class="tester-name">{{ tester.name }}</span>
+        <span class="tester-type">{{ tester.tester_type }}</span>
+    </div>
+
+    <div class="card-handler">
+        {% if tester.handler and not tester.handler.is_offline %}
+            <span class="handler-badge">&#128279; {{ tester.handler.name }}</span>
+        {% else %}
+            <span class="no-handler">No Handler</span>
+        {% endif %}
+    </div>
+
+    <div class="card-status"
+         id="status-{{ tester.id }}"
+         style="background-color: {{ tester.current_status.color if tester.current_status else '#6c757d' }};">
+        {{ tester.current_status.name if tester.current_status else 'No Status' }}
+    </div>
+
+    <div class="card-timer" id="timer-{{ tester.id }}"
+         data-since="{{ tester.status_since.isoformat() if tester.status_since else '' }}">
+        {% if duration_minutes is not none %}
+            {% if duration_minutes < 60 %}
+                {{ duration_minutes }}m
+            {% else %}
+                {{ duration_minutes // 60 }}h {{ duration_minutes % 60 }}m
+            {% endif %}
+        {% else %}
+            --
+        {% endif %}
+    </div>
+
+    <div class="card-footer">
+        <a href="{{ url_for('station_detail', tester_id=tester.id) }}"
+           onclick="event.stopPropagation()"
+           class="history-btn" title="View History">&#128196; History</a>
+        <a href="{{ url_for('jobsheet', tester_id=tester.id) }}"
+           onclick="event.stopPropagation()"
+           class="history-btn jobsheet-btn {% if tester.id in reminder_tester_ids %}jobsheet-due{% endif %}"
+           title="Job Sheet{% if tester.id in reminder_tester_ids %} - Update Due!{% endif %}">
+            &#128203;{% if tester.id in reminder_tester_ids %} &#9888;{% endif %} JS
+        </a>
+    </div>
+</div>

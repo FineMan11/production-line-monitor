@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Job Sheet - {{ sheet.tester.name }} - {{ sheet.date }}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; font-size: 10pt; color: #000; background: #fff; }
+        .page { width: 210mm; margin: 0 auto; padding: 10mm; }
+
+        h1 { text-align: center; font-size: 13pt; letter-spacing: 1px; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 4px; }
+        h2 { text-align: center; font-size: 11pt; margin-bottom: 8px; }
+        .section-title { font-size: 11pt; font-weight: bold; text-align: center; border: 2px solid #000; padding: 4px; margin: 12px 0 0; background: #f0f0f0; letter-spacing: 1px; }
+        .meta { display: flex; justify-content: space-between; font-size: 9pt; margin-bottom: 6px; }
+
+        table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+        th, td { border: 1px solid #000; padding: 4px 6px; text-align: center; font-size: 9pt; }
+        th { background: #ddd; font-weight: bold; }
+        td.left { text-align: left; }
+        .empty-row td { color: #999; }
+
+        .tester-info { display: flex; gap: 20px; font-size: 9pt; margin-bottom: 6px; }
+        .tester-info span { font-weight: bold; }
+
+        .footer { margin-top: 16px; font-size: 8pt; display: flex; justify-content: space-between; border-top: 1px solid #000; padding-top: 4px; }
+
+        @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+            .page { padding: 6mm; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <!-- Print button (hidden when printing) -->
+    <div class="no-print" style="text-align:right; margin-bottom:10px;">
+        <button onclick="window.print()" style="padding:8px 20px; font-size:11pt; cursor:pointer;">
+            &#128438; Print
+        </button>
+        <button onclick="window.close()" style="padding:8px 16px; font-size:11pt; cursor:pointer; margin-left:8px;">
+            Close
+        </button>
+    </div>
+
+    <h1>RIO DAILY JOB SHEET</h1>
+    <h2>{{ sheet.tester.name }}
+        {% if sheet.tester.handler and not sheet.tester.handler.is_offline %}
+            &nbsp;/&nbsp; {{ sheet.tester.handler.name }}
+        {% endif %}
+    </h2>
+
+    <div class="meta">
+        <span>Date: <strong>{{ sheet.date.strftime('%d %b %Y') }}</strong></span>
+        <span>Shift: <strong>{{ 'Morning (0700–1900)' if sheet.shift == 'morning' else 'Night (1900–0700)' }}</strong></span>
+        <span>Status: <strong>{{ 'Completed' if sheet.is_completed else 'Open' }}</strong></span>
+        {% if sheet.is_completed and sheet.closed_at %}
+        <span>Closed at: <strong>{{ sheet.closed_at.strftime('%H:%M') }}</strong></span>
+        {% endif %}
+    </div>
+
+    <!-- ══════════════════════════════════════
+         TABLE 1 — RIO DAILY JOB SHEET
+         ══════════════════════════════════════ -->
+    <div class="section-title">RIO DAILY JOB SHEET</div>
+    <table>
+        <thead>
+            <tr>
+                <th>TIME</th>
+                <th>FLOW</th>
+                <th>SITE</th>
+                <th>TOTAL</th>
+                <th>UNTESTED</th>
+                <th>TOTAL GOOD</th>
+                <th>TOTAL TESTED</th>
+                <th>DEVICE SIZE</th>
+                <th>SUBMITTED BY</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in sheet.rio_entries %}
+            <tr>
+                <td><strong>{{ e.entry_time }}</strong></td>
+                <td>{{ e.flow or '' }}</td>
+                <td>{{ e.site or '' }}</td>
+                <td>{{ e.total or '' }}</td>
+                <td>{{ e.untested if e.untested is not none else '' }}</td>
+                <td>{{ e.total_good if e.total_good is not none else '' }}</td>
+                <td>{{ e.total_tested if e.total_tested is not none else '' }}</td>
+                <td>{{ e.device_size or '' }}</td>
+                <td>{{ e.submitted_by or '' }}</td>
+            </tr>
+            {% else %}
+            <tr class="empty-row">
+                <td colspan="9">No entries</td>
+            </tr>
+            {% endfor %}
+            <!-- Blank rows for manual write-in -->
+            {% set blank_rows = 5 - sheet.rio_entries|length %}
+            {% for i in range(blank_rows if blank_rows > 0 else 0) %}
+            <tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            {% endfor %}
+            <tr>
+                <td colspan="4" style="text-align:right; font-weight:bold;">TOTAL</td>
+                <td></td>
+                <td>{% set tg = namespace(val=0) %}{% for e in sheet.rio_entries %}{% if e.total_good %}{% set tg.val = tg.val + e.total_good %}{% endif %}{% endfor %}{{ tg.val if sheet.rio_entries else '' }}</td>
+                <td>{% set tt = namespace(val=0) %}{% for e in sheet.rio_entries %}{% if e.total_tested %}{% set tt.val = tt.val + e.total_tested %}{% endif %}{% endfor %}{{ tt.val if sheet.rio_entries else '' }}</td>
+                <td colspan="2"></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ══════════════════════════════════════
+         TABLE 2 — TOTAL UNPRODUCTIVE TIME
+         ══════════════════════════════════════ -->
+    <div class="section-title">TOTAL UNPRODUCTIVE TIME</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width:60px;">FROM</th>
+                <th style="width:60px;">TO</th>
+                <th style="width:70px;">TOTAL TIME</th>
+                <th>UNPRODUCTIVE / DOWN TIME DETAILS</th>
+                <th>ACTION TAKEN</th>
+                <th style="width:80px;">RESP TECH</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in sheet.unproductive_entries %}
+            <tr>
+                <td>{{ e.from_time }}</td>
+                <td>{{ e.to_time or '' }}</td>
+                <td>{{ e.total_time_str }}</td>
+                <td class="left">{{ e.details or '' }}</td>
+                <td class="left">{{ e.action_taken or '' }}</td>
+                <td>{{ e.resp_tech or '' }}</td>
+            </tr>
+            {% else %}
+            <tr class="empty-row">
+                <td colspan="6">No unproductive time recorded</td>
+            </tr>
+            {% endfor %}
+            <!-- Blank rows -->
+            {% set blank_up = 4 - sheet.unproductive_entries|length %}
+            {% for i in range(blank_up if blank_up > 0 else 0) %}
+            <tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <span>Form No.: K-MF0105 rev.A</span>
+        <span>Printed: {{ sheet.date.strftime('%d %b %Y') }}</span>
+        <span>Page 1 of 1</span>
+    </div>
+</div>
+</body>
+</html>

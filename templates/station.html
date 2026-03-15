@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}{{ tester.name }} - History{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="{{ url_for('dashboard') }}" class="back-link">&larr; Back to Dashboard</a>
+    <h2>{{ tester.name }} &mdash; Status History</h2>
+</div>
+
+<!-- Current Status Card -->
+<div class="current-status-card"
+     style="border-left: 8px solid {{ tester.current_status.color if tester.current_status else '#6c757d' }};">
+    <div class="cs-info">
+        <div class="cs-label">Current Status</div>
+        <div class="cs-status" style="color: {{ tester.current_status.color if tester.current_status else '#6c757d' }};">
+            {{ tester.current_status.name if tester.current_status else 'No Status Set' }}
+        </div>
+        {% if tester.status_since %}
+        <div class="cs-since">
+            Since: {{ tester.status_since.strftime('%Y-%m-%d %H:%M') }}
+            &nbsp;&mdash;&nbsp;
+            {% set delta = (now - tester.status_since).total_seconds() | int %}
+            {% set mins = delta // 60 %}
+            {% if mins < 60 %}
+                Running {{ mins }}m
+            {% else %}
+                Running {{ mins // 60 }}h {{ mins % 60 }}m
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    <div class="cs-handler">
+        <div class="cs-label">Handler</div>
+        <div>{{ tester.handler.name if tester.handler and not tester.handler.is_offline else 'None' }}</div>
+    </div>
+    <div class="cs-update">
+        <button onclick="openModal({{ tester.id }}, '{{ tester.name }}')" class="btn btn-primary">
+            Update Status
+        </button>
+    </div>
+</div>
+
+<!-- History Table -->
+<div class="history-section">
+    <h3>Status Change Log</h3>
+    {% if history %}
+    <table class="history-table">
+        <thead>
+            <tr>
+                <th>Date &amp; Time</th>
+                <th>From</th>
+                <th>To</th>
+                <th>Duration (From)</th>
+                <th>Changed By</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for h in history %}
+            <tr>
+                <td>{{ h.changed_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                    {% if h.old_status %}
+                    <span class="status-pill" style="background-color: {{ h.old_status.color }};">
+                        {{ h.old_status.name }}
+                    </span>
+                    {% else %}
+                        <span class="status-pill" style="background-color: #6c757d;">--</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="status-pill" style="background-color: {{ h.new_status.color }};">
+                        {{ h.new_status.name }}
+                    </span>
+                </td>
+                <td>
+                    {% if h.duration_minutes is not none %}
+                        {% if h.duration_minutes < 60 %}
+                            {{ h.duration_minutes }}m
+                        {% else %}
+                            {{ h.duration_minutes // 60 }}h {{ h.duration_minutes % 60 }}m
+                        {% endif %}
+                    {% else %}
+                        --
+                    {% endif %}
+                </td>
+                <td>{{ h.changed_by }}</td>
+                <td>{{ h.notes or '' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="no-data">No history yet.</p>
+    {% endif %}
+</div>
+
+<!-- Modal (same as dashboard) -->
+<div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal()"></div>
+<div id="status-modal" class="modal hidden">
+    <div class="modal-header">
+        <h3>Update Status &mdash; <span id="modal-station-name"></span></h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <form id="status-form" method="POST">
+        <div class="form-group">
+            <label>Your Name <span class="optional">(optional)</span></label>
+            <input type="text" name="changed_by" placeholder="Operator" class="form-control">
+        </div>
+        <div class="form-group">
+            <label>Select New Status</label>
+            <div class="status-buttons">
+                {% for status in statuses %}
+                <button type="submit" name="status_id" value="{{ status.id }}"
+                        class="status-btn"
+                        style="background-color: {{ status.color }}; border-color: {{ status.color }};">
+                    {{ status.name }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Notes <span class="optional">(optional)</span></label>
+            <textarea name="notes" class="form-control" rows="2"></textarea>
+        </div>
+    </form>
+    <div class="modal-footer">
+        <a id="modal-history-link" href="#" class="btn btn-secondary">View History</a>
+        <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.SERVER_NOW = new Date("{{ now.isoformat() }}Z").getTime();
+    window.CLIENT_LOAD = Date.now();
+</script>
+{% endblock %}

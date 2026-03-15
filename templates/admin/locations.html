@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Locations - Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="{{ url_for('admin_index') }}" class="back-link">&larr; Admin Panel</a>
+    <h2>Locations / Zones</h2>
+    <p>Locations group stations into sections on the dashboard.</p>
+</div>
+
+<div class="admin-form-card">
+    <h3>Add New Location</h3>
+    <form method="POST" action="{{ url_for('admin_add_location') }}" class="inline-form">
+        <input type="text" name="name" placeholder="e.g. Line A, Room 1, Zone B" class="form-control" required>
+        <button type="submit" class="btn btn-primary">Add Location</button>
+    </form>
+</div>
+
+<div class="admin-table-wrapper">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Location Name</th>
+                <th>Stations Assigned</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for loc in locations %}
+            <tr>
+                <td><strong>{{ loc.name }}</strong></td>
+                <td>{{ loc.testers | length }}</td>
+                <td>
+                    <button class="btn btn-sm btn-secondary"
+                            onclick="showEditLocation({{ loc.id }}, '{{ loc.name }}')">
+                        Rename
+                    </button>
+                    <form method="POST" action="{{ url_for('admin_delete_location', loc_id=loc.id) }}"
+                          style="display:inline;"
+                          onsubmit="return confirm('Delete location {{ loc.name }}? Stations will be moved to Unassigned.')">
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Edit Modal -->
+<div id="modal-overlay" class="modal-overlay hidden" onclick="closeEditLocation()"></div>
+<div id="edit-location-modal" class="modal hidden">
+    <div class="modal-header">
+        <h3>Rename Location</h3>
+        <button class="modal-close" onclick="closeEditLocation()">&times;</button>
+    </div>
+    <form id="edit-location-form" method="POST">
+        <div class="form-group">
+            <label>New Name</label>
+            <input type="text" name="name" id="edit-loc-name" class="form-control" required>
+        </div>
+        <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" onclick="closeEditLocation()" class="btn btn-secondary">Cancel</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showEditLocation(id, name) {
+    document.getElementById('edit-location-form').action = '/admin/locations/' + id + '/edit';
+    document.getElementById('edit-loc-name').value = name;
+    document.getElementById('edit-location-modal').classList.remove('hidden');
+    document.getElementById('modal-overlay').classList.remove('hidden');
+}
+function closeEditLocation() {
+    document.getElementById('edit-location-modal').classList.add('hidden');
+    document.getElementById('modal-overlay').classList.add('hidden');
+}
+</script>
+{% endblock %}

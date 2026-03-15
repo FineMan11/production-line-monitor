@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Stations - Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="{{ url_for('admin_index') }}" class="back-link">&larr; Admin Panel</a>
+    <h2>Stations / Testers</h2>
+</div>
+
+<!-- Add Station Form -->
+<div class="admin-form-card">
+    <h3>Add New Station</h3>
+    <form method="POST" action="{{ url_for('admin_add_station') }}" class="inline-form">
+        <input type="text" name="name" placeholder="e.g. INVTG-01" class="form-control" required>
+        <select name="tester_type" class="form-control" required>
+            <option value="">-- Tester Type --</option>
+            <option value="INVTG">INVTG</option>
+            <option value="ETS364">ETS364</option>
+            <option value="J750">J750</option>
+            <option value="IFLEX">IFLEX</option>
+            <option value="MFLEX">MFLEX</option>
+        </select>
+        <select name="location_id" class="form-control">
+            <option value="">-- No Location --</option>
+            {% for loc in locations %}
+            <option value="{{ loc.id }}">{{ loc.name }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary">Add Station</button>
+    </form>
+</div>
+
+<!-- Search/Filter Bar -->
+<div class="admin-form-card" style="margin-bottom:12px; padding:12px 16px;">
+    <input type="text" id="station-search" class="form-control"
+           placeholder="Search by name, type, location, handler, status..." style="max-width:400px;">
+</div>
+
+<!-- Station List -->
+<div class="admin-table-wrapper">
+    <table class="admin-table" id="stations-table">
+        <thead>
+            <tr>
+                <th class="sortable" data-col="0">Name <span class="sort-icon">&#8597;</span></th>
+                <th class="sortable" data-col="1">Type <span class="sort-icon">&#8597;</span></th>
+                <th class="sortable" data-col="2">Location <span class="sort-icon">&#8597;</span></th>
+                <th class="sortable" data-col="3">Handler <span class="sort-icon">&#8597;</span></th>
+                <th class="sortable" data-col="4">Status <span class="sort-icon">&#8597;</span></th>
+                <th class="sortable" data-col="5">Offline <span class="sort-icon">&#8597;</span></th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tester in testers %}
+            <tr class="{{ 'row-offline' if tester.is_offline else '' }}">
+                <td><strong>{{ tester.name }}</strong></td>
+                <td>{{ tester.tester_type }}</td>
+                <td>{{ tester.location.name if tester.location else '—' }}</td>
+                <td>{{ tester.handler.name if tester.handler else '—' }}</td>
+                <td>
+                    {% if tester.current_status %}
+                    <span class="status-pill" style="background-color: {{ tester.current_status.color }};">
+                        {{ tester.current_status.name }}
+                    </span>
+                    {% else %}—{% endif %}
+                </td>
+                <td>{{ 'Yes' if tester.is_offline else 'No' }}</td>
+                <td>
+                    <button class="btn btn-sm btn-secondary"
+                            onclick="showEditStation({{ tester.id }}, '{{ tester.name }}', '{{ tester.tester_type }}', {{ tester.location_id or 'null' }}, {{ 'true' if tester.is_offline else 'false' }})">
+                        Edit
+                    </button>
+                    <form method="POST" action="{{ url_for('admin_delete_station', tester_id=tester.id) }}"
+                          style="display:inline;"
+                          onsubmit="return confirm('Delete {{ tester.name }}? This cannot be undone.')">
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Edit Modal -->
+<div id="modal-overlay" class="modal-overlay hidden" onclick="closeEditStation()"></div>
+<div id="edit-station-modal" class="modal hidden">
+    <div class="modal-header">
+        <h3>Edit Station</h3>
+        <button class="modal-close" onclick="closeEditStation()">&times;</button>
+    </div>
+    <form id="edit-station-form" method="POST">
+        <div class="form-group">
+            <label>Name</label>
+            <input type="text" name="name" id="edit-name" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <label>Tester Type</label>
+            <select name="tester_type" id="edit-type" class="form-control">
+                <option value="INVTG">INVTG</option>
+                <option value="ETS364">ETS364</option>
+                <option value="J750">J750</option>
+                <option value="IFLEX">IFLEX</option>
+                <option value="MFLEX">MFLEX</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Location</label>
+            <select name="location_id" id="edit-location" class="form-control">
+                <option value="">-- No Location --</option>
+                {% for loc in locations %}
+                <option value="{{ loc.id }}">{{ loc.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group checkbox-group">
+            <label>
+                <input type="checkbox" name="is_offline" id="edit-offline">
+                Mark as Offline
+            </label>
+        </div>
+        <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <button type="button" onclick="closeEditStation()" class="btn btn-secondary">Cancel</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showEditStation(id, name, type, locationId, isOffline) {
+    document.getElementById('edit-station-form').action = '/admin/stations/' + id + '/edit';
+    document.getElementById('edit-name').value = name;
+    document.getElementById('edit-type').value = type;
+    document.getElementById('edit-location').value = locationId || '';
+    document.getElementById('edit-offline').checked = isOffline;
+    document.getElementById('edit-station-modal').classList.remove('hidden');
+    document.getElementById('modal-overlay').classList.remove('hidden');
+}
+function closeEditStation() {
+    document.getElementById('edit-station-modal').classList.add('hidden');
+    document.getElementById('modal-overlay').classList.add('hidden');
+}
+
+// ── SORT ──────────────────────────────────────────────────
+var sortState = { col: -1, asc: true };
+
+document.querySelectorAll('#stations-table th.sortable').forEach(function(th) {
+    th.style.cursor = 'pointer';
+    th.addEventListener('click', function() {
+        var col = parseInt(this.getAttribute('data-col'));
+        if (sortState.col === col) {
+            sortState.asc = !sortState.asc;
+        } else {
+            sortState.col = col;
+            sortState.asc = true;
+        }
+        sortTable(col, sortState.asc);
+        // Update sort icons
+        document.querySelectorAll('#stations-table th.sortable').forEach(function(h) {
+            h.querySelector('.sort-icon').innerHTML = '&#8597;';
+        });
+        this.querySelector('.sort-icon').innerHTML = sortState.asc ? '&#8593;' : '&#8595;';
+    });
+});
+
+function sortTable(col, asc) {
+    var tbody = document.querySelector('#stations-table tbody');
+    var rows = Array.from(tbody.querySelectorAll('tr'));
+    rows.sort(function(a, b) {
+        var aText = a.cells[col] ? a.cells[col].textContent.trim().toLowerCase() : '';
+        var bText = b.cells[col] ? b.cells[col].textContent.trim().toLowerCase() : '';
+        if (aText < bText) return asc ? -1 : 1;
+        if (aText > bText) return asc ? 1 : -1;
+        return 0;
+    });
+    rows.forEach(function(row) { tbody.appendChild(row); });
+}
+
+// ── SEARCH / FILTER ───────────────────────────────────────
+document.getElementById('station-search').addEventListener('input', function() {
+    var query = this.value.toLowerCase();
+    var rows = document.querySelectorAll('#stations-table tbody tr');
+    rows.forEach(function(row) {
+        var text = row.textContent.toLowerCase();
+        row.style.display = text.includes(query) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Handlers - Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="{{ url_for('admin_index') }}" class="back-link">&larr; Admin Panel</a>
+    <h2>Handlers</h2>
+</div>
+
+<!-- Add Handler -->
+<div class="admin-form-card">
+    <h3>Add New Handler</h3>
+    <form method="POST" action="{{ url_for('admin_add_handler') }}" class="inline-form">
+        <input type="text" name="name" placeholder="e.g. JHT-01" class="form-control" required>
+        <select name="handler_type" class="form-control" required>
+            <option value="">-- Handler Type --</option>
+            <option value="JHT">JHT</option>
+            <option value="MT">MT</option>
+            <option value="CAS">CAS</option>
+        </select>
+        <select name="tester_id" class="form-control">
+            <option value="">-- No Station --</option>
+            {% for tester in testers %}
+            <option value="{{ tester.id }}">{{ tester.name }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary">Add Handler</button>
+    </form>
+</div>
+
+<!-- Handler List -->
+<div class="admin-table-wrapper">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Assigned to Station</th>
+                <th>Offline</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for handler in handlers %}
+            <tr class="{{ 'row-offline' if handler.is_offline else '' }}">
+                <td><strong>{{ handler.name }}</strong></td>
+                <td>{{ handler.handler_type }}</td>
+                <td>{{ handler.tester.name if handler.tester else '—' }}</td>
+                <td>{{ 'Yes' if handler.is_offline else 'No' }}</td>
+                <td>
+                    <!-- Move handler -->
+                    <button class="btn btn-sm btn-secondary"
+                            onclick="showMoveHandler({{ handler.id }}, '{{ handler.name }}', {{ handler.tester_id or 'null' }})">
+                        Move
+                    </button>
+                    <!-- Delete -->
+                    <form method="POST" action="{{ url_for('admin_delete_handler', handler_id=handler.id) }}"
+                          style="display:inline;"
+                          onsubmit="return confirm('Delete {{ handler.name }}?')">
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Move Handler Modal -->
+<div id="modal-overlay" class="modal-overlay hidden" onclick="closeMoveHandler()"></div>
+<div id="move-handler-modal" class="modal hidden">
+    <div class="modal-header">
+        <h3>Move Handler: <span id="move-handler-name"></span></h3>
+        <button class="modal-close" onclick="closeMoveHandler()">&times;</button>
+    </div>
+    <form id="move-handler-form" method="POST">
+        <div class="form-group">
+            <label>Assign to Station</label>
+            <select name="tester_id" id="move-tester-id" class="form-control">
+                <option value="">-- Offline (no station) --</option>
+                {% for tester in testers %}
+                <option value="{{ tester.id }}">{{ tester.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Confirm Move</button>
+            <button type="button" onclick="closeMoveHandler()" class="btn btn-secondary">Cancel</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showMoveHandler(id, name, currentTesterId) {
+    document.getElementById('move-handler-form').action = '/admin/handlers/' + id + '/move';
+    document.getElementById('move-handler-name').textContent = name;
+    document.getElementById('move-tester-id').value = currentTesterId || '';
+    document.getElementById('move-handler-modal').classList.remove('hidden');
+    document.getElementById('modal-overlay').classList.remove('hidden');
+}
+function closeMoveHandler() {
+    document.getElementById('move-handler-modal').classList.add('hidden');
+    document.getElementById('modal-overlay').classList.add('hidden');
+}
+</script>
+{% endblock %}

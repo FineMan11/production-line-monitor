@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Production Monitor{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Production Line Status</h1>
+    <div class="header-meta">
+        <span id="clock" class="clock"></span>
+        <span class="refresh-note">Auto-refreshes every 60s</span>
+    </div>
+</div>
+
+<!-- Summary Bar -->
+<div class="summary-bar">
+    <div class="summary-item summary-total">
+        <div class="summary-number">{{ total_testers }}</div>
+        <div class="summary-label">Total Testers</div>
+    </div>
+    <div class="summary-item summary-online">
+        <div class="summary-number">{{ total_online }}</div>
+        <div class="summary-label">Online</div>
+    </div>
+    <div class="summary-item summary-offline">
+        <div class="summary-number">{{ total_offline }}</div>
+        <div class="summary-label">Offline</div>
+    </div>
+    <div class="summary-divider"></div>
+    {% for status in statuses %}
+    <div class="summary-item" style="border-top: 3px solid {{ status.color }};">
+        <div class="summary-number" style="color: {{ status.color }};">{{ status_counts[status.id] }}</div>
+        <div class="summary-label">{{ status.name }}</div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Status Legend -->
+<div class="status-legend">
+    <span class="legend-label">Status:</span>
+    {% for status in statuses %}
+    <span class="legend-item" style="background-color: {{ status.color }};">{{ status.name }}</span>
+    {% endfor %}
+</div>
+
+<!-- Location Sections -->
+{% for location in locations %}
+    {% set active_testers = location.testers | selectattr('is_offline', 'equalto', false) | list %}
+    {% if active_testers %}
+    <section class="location-section">
+        <h2 class="location-title">{{ location.name }}</h2>
+        <div class="station-grid">
+            {% for tester in active_testers %}
+                {% include 'partials/station_card.html' %}
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+{% endfor %}
+
+<!-- Unassigned (no location) -->
+{% if unassigned %}
+<section class="location-section">
+    <h2 class="location-title">Unassigned</h2>
+    <div class="station-grid">
+        {% for tester in unassigned %}
+            {% include 'partials/station_card.html' %}
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- Offline Section -->
+{% if offline_testers or offline_handlers %}
+<section class="location-section offline-section">
+    <h2 class="location-title">&#128683; Offline</h2>
+    <div class="offline-grid">
+        {% for tester in offline_testers %}
+        <div class="offline-item">
+            <div class="offline-name">{{ tester.name }}</div>
+            <div class="offline-type">Tester &bull; {{ tester.tester_type }}</div>
+            {% if tester.handler %}
+                <div class="offline-handler">Handler: {{ tester.handler.name }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% for handler in offline_handlers %}
+        <div class="offline-item offline-handler-item">
+            <div class="offline-name">{{ handler.name }}</div>
+            <div class="offline-type">Handler &bull; {{ handler.handler_type }}</div>
+            <div class="offline-handler">Not assigned</div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if not locations and not unassigned %}
+<div class="empty-state">
+    <p>No stations yet.</p>
+    {% if current_user.is_authenticated and current_user.role == 'admin' %}
+        <a href="{{ url_for('admin_stations') }}" class="btn btn-primary">Add Stations</a>
+    {% else %}
+        <p>Ask an admin to add stations.</p>
+    {% endif %}
+</div>
+{% endif %}
+
+
+<!-- Status Update Modal -->
+<div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal()"></div>
+<div id="status-modal" class="modal hidden">
+    <div class="modal-header">
+        <h3>Update Status &mdash; <span id="modal-station-name"></span></h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <form id="status-form" method="POST">
+        <div class="form-group">
+            <label>Your Name <span class="optional">(optional)</span></label>
+            <input type="text" name="changed_by" placeholder="Operator" class="form-control"
+                   id="operator-name-input">
+        </div>
+        <div class="form-group">
+            <label>Select New Status</label>
+            <div class="status-buttons">
+                {% for status in statuses %}
+                <button type="submit" name="status_id" value="{{ status.id }}"
+                        class="status-btn"
+                        style="background-color: {{ status.color }}; border-color: {{ status.color }};">
+                    {{ status.name }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Notes <span class="optional">(optional)</span></label>
+            <textarea name="notes" class="form-control" rows="2"
+                      placeholder="Any notes about this status change..."></textarea>
+        </div>
+    </form>
+    <div class="modal-footer">
+        <a id="modal-history-link" href="#" class="btn btn-secondary">View History</a>
+        <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Pass server-rendered now to JS for timer calculations
+    window.SERVER_NOW = new Date("{{ now.isoformat() }}Z").getTime();
+    window.CLIENT_LOAD = Date.now();
+</script>
+{% endblock %}
