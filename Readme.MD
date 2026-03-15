@@ -2,7 +2,7 @@
 
 A full-stack web application that digitises production floor tracking for a semiconductor/electronics testing facility. Replaces paper-based job sheets and manual status boards with a real-time dashboard accessible to any device on the local network.
 
-> Built to solve a real operational problem — operators no longer walk to a whiteboard to check station status or fill in paper forms by hand.
+> Built to solve a real operational problem — operators no longer fill in paper forms by hand.
 
 ---
 
