@@ -2,7 +2,6 @@
 
 A full-stack, real-time web application that digitises production floor tracking for a semiconductor/electronics testing facility. Replaces paper-based job sheets (form K-MF0105) and manual status boards with a live dashboard accessible to any device on the local network.
 
-> Built to solve a real operational problem — operators no longer fill in paper forms by hand.
 
 ---
 
