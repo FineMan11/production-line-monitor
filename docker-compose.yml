@@ -1,0 +1,60 @@
+services:
+
+  postgres:
+    image: postgres:14
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - prodnet
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - prodnet
+    volumes:
+      - ./backend:/app
+    # Port 5000 is internal only — access goes through nginx
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    networks:
+      - prodnet
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules      # Preserve container's node_modules (don't overwrite with host)
+    # Port 5173 is internal only — access goes through nginx
+
+  nginx:
+    build: ./nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - prodnet
+
+networks:
+  prodnet:
+    driver: bridge
+
+volumes:
+  postgres_data:

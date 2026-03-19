@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find c:UsersraishProduction-Monitoringfrontend -type f -name *.json -o -name *.js -o -name *.jsx -o -name *.css -o -name *.html)",
+      "Bash(docker compose:*)"
+    ]
+  }
+}
