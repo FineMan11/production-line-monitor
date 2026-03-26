@@ -67,6 +67,11 @@ A self-hosted web app that gives the entire floor a **single source of truth** �
 | `supervisor` | Above + manage stations, view audit logs |
 | `admin` | Full access |
 
+### Troubleshooting Sessions
+- Log upchuck/jamming incidents per tester station
+- Record steps taken, PC failure observations, site counts, and site failures
+- Full session history per tester for pattern analysis
+
 ### Audit Trail
 - Every user action is logged (who, what, when, from which IP)
 - Status history is append-only — full change history preserved indefinitely
@@ -134,10 +139,23 @@ http://localhost
 |-------|------------|--------|
 | Phase 1 | Production line dashboard with live status tracking | ✅ Complete |
 | Phase 2 | Digital job sheet (K-MF0105 replacement) | ✅ Complete |
-| Phase 3 | Full-stack rebuild — React, PostgreSQL, Docker, JWT | 🔄 In Progress |
+| Phase 3 | Full-stack rebuild — React, PostgreSQL, Docker, JWT, Troubleshooting Sessions | ✅ Complete |
 | Phase 4 | JHT handler real-time monitoring via network | 🔜 Planned |
 | Phase 5 | Auto job sheet data entry from tester log files | 🔜 Planned |
-| Phase 6 | Knowledge base / troubleshooting system for technicians | 🔜 Planned |
+| Phase 6 | Knowledge base / searchable troubleshooting solutions | 🔜 Planned |
+| Phase 7 | AI root cause analysis (Claude API integration) | 🔜 Planned |
+
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [ECOSYSTEM_SPECIFICATION.md](ECOSYSTEM_SPECIFICATION.md) | Full feature and business requirements |
+| [ROADMAP.md](ROADMAP.md) | Detailed phase-by-phase development plan |
+| [API_DOCUMENTATION.md](API_DOCUMENTATION.md) | All endpoints, request/response formats |
+| [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | Step-by-step setup for new environments |
+| [USER_GUIDE.md](USER_GUIDE.md) | How operators, technicians, and supervisors use the system |
 
 ---
 
