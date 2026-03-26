@@ -2,3 +2,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Prevent iOS Safari from zooming in when tapping inputs */
+input, textarea, select {
+  font-size: max(16px, 1em);
+}

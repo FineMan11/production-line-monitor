@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from app.extensions import db
 
@@ -90,8 +91,12 @@ class TroubleshootingStep(db.Model):
     measured_value      = db.Column(db.String(30),  nullable=True)
     upper_limit         = db.Column(db.String(30),  nullable=True)
     lower_limit         = db.Column(db.String(30),  nullable=True)
+    site_count          = db.Column(db.Integer,     nullable=True)   # 1 | 2 | 4 | 8 | 16
+    site_number         = db.Column(db.String(50),  nullable=True)   # comma-separated e.g. "1,3,4"
+    site_failures       = db.Column(db.Text,        nullable=True)   # JSON array of per-site failure objects
     # ───────────────────────────────────────────────────────────────────
-    action     = db.Column(db.Text, nullable=False)
+    action_tags = db.Column(db.Text, nullable=True)  # comma-separated preset actions e.g. "Clean Socket,Swap Chuck"
+    action     = db.Column(db.Text, nullable=True)   # free-text action description (optional)
     result     = db.Column(db.Text, nullable=False)
     plan       = db.Column(db.Text, nullable=True)   # next planned action — jamming only
     created_at = db.Column(
@@ -113,6 +118,10 @@ class TroubleshootingStep(db.Model):
             "measured_value": self.measured_value,
             "upper_limit": self.upper_limit,
             "lower_limit": self.lower_limit,
+            "site_count": self.site_count,
+            "site_number": self.site_number,
+            "site_failures": json.loads(self.site_failures) if self.site_failures else None,
+            "action_tags": self.action_tags,
             "action": self.action,
             "result": self.result,
             "plan": self.plan,

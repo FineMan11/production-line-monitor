@@ -55,6 +55,7 @@ export default function TesterCard({
   const isAdmin  = user?.role === 'admin'
 
   const [menuOpen,              setMenuOpen]              = useState(false)
+  const [dropdownAlign,         setDropdownAlign]         = useState('right')
   const [statusPickerOpen,      setStatusPickerOpen]      = useState(false)
   const [showMaintModal,        setShowMaintModal]        = useState(false)
   const [showHistoryModal,      setShowHistoryModal]      = useState(false)
@@ -158,7 +159,14 @@ export default function TesterCard({
           {/* Three-dot menu trigger */}
           <div className="relative flex-shrink-0" ref={menuRef}>
             <button
-              onClick={() => { setMenuOpen((o) => !o); setStatusPickerOpen(false) }}
+              onClick={() => {
+                if (!menuOpen && menuRef.current) {
+                  const rect = menuRef.current.getBoundingClientRect()
+                  setDropdownAlign(rect.left < window.innerWidth / 2 ? 'left' : 'right')
+                }
+                setMenuOpen((o) => !o)
+                setStatusPickerOpen(false)
+              }}
               className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
               title="Station actions"
             >
@@ -167,8 +175,9 @@ export default function TesterCard({
 
             {/* Dropdown menu */}
             {menuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-gray-200
-                              rounded-lg shadow-md z-20 py-1">
+              <div className={`absolute top-full mt-1 w-44 bg-white border border-gray-200
+                              rounded-lg shadow-md z-20 py-1
+                              ${dropdownAlign === 'left' ? 'left-0' : 'right-0'}`}>
 
                 {/* Change Status (expands inline) */}
                 <button

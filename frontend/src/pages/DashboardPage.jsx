@@ -155,7 +155,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50">
       <Navbar title="Dashboard" />
 
-      <main className="px-6 py-6 max-w-screen-xl mx-auto">
+      <main className="px-3 py-4 sm:px-6 sm:py-6 max-w-screen-xl mx-auto overflow-x-hidden">
 
         {error && (
           <div className="flex items-start gap-2 px-3 py-2.5 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 mb-6">
@@ -167,7 +167,7 @@ export default function DashboardPage() {
         {loading ? (
           <div>
             <SectionHeader title="Loading stations…" count="—" />
-            <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
+            <div className="grid gap-2 sm:gap-3 grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))]">
               {Array.from({ length: 20 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           </div>
@@ -188,7 +188,7 @@ export default function DashboardPage() {
             {plant1.length > 0 && (
               <section>
                 <SectionHeader title="Plant 1" count={plant1.length} />
-                <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
+                <div className="grid gap-2 sm:gap-3 grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))]">
                   {plant1.map((tester) => (
                     <TesterCard
                       key={tester.id}
@@ -214,7 +214,7 @@ export default function DashboardPage() {
             {plant2.length > 0 && (
               <section>
                 <SectionHeader title="Plant 2" count={plant2.length} />
-                <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
+                <div className="grid gap-2 sm:gap-3 grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))]">
                   {plant2.map((tester) => (
                     <TesterCard
                       key={tester.id}

@@ -7,6 +7,7 @@ GET   /api/troubleshooting/<id>             — Get session + all steps
 POST  /api/troubleshooting/<id>/steps       — Add a step to an open session
 PATCH /api/troubleshooting/<id>/close       — Close a session (body: {"solved": bool})
 """
+import json
 from flask import Blueprint, request, jsonify, abort
 from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
 
@@ -114,19 +115,20 @@ def add_step(session_id: int):
     _require_write_role()
 
     data   = request.get_json(silent=True) or {}
-    action = (data.get("action") or "").strip()
     result = (data.get("result") or "").strip()
 
-    if not action:
-        abort(400, description="'action' is required.")
     if not result:
         abort(400, description="'result' is required.")
 
+    sf_raw = data.get("site_failures")
+    site_failures = json.dumps(sf_raw) if sf_raw else None
+
     step = troubleshooting_service.add_step(
         session_id=session_id,
-        action=action,
         result=result,
         user_id=get_jwt_identity(),
+        action=data.get("action"),
+        action_tags=data.get("action_tags"),
         plan=data.get("plan"),
         pin_number=data.get("pin_number"),
         hb_observed=data.get("hb_observed"),
@@ -135,6 +137,9 @@ def add_step(session_id: int):
         measured_value=data.get("measured_value"),
         upper_limit=data.get("upper_limit"),
         lower_limit=data.get("lower_limit"),
+        site_count=data.get("site_count"),
+        site_number=data.get("site_number"),
+        site_failures=site_failures,
     )
     db.session.commit()
     return jsonify(step.to_dict()), 201
@@ -146,10 +151,14 @@ def update_step(step_id: int):
     """Update editable fields on a step. Any write-role user can edit."""
     _require_write_role()
     data = request.get_json(silent=True) or {}
+    sf_raw = data.get("site_failures")
+    site_failures = json.dumps(sf_raw) if sf_raw is not None else None
+
     step = troubleshooting_service.update_step(
         step_id=step_id,
         user_id=get_jwt_identity(),
         action=data.get("action"),
+        action_tags=data.get("action_tags"),
         result=data.get("result"),
         plan=data.get("plan"),
         pin_number=data.get("pin_number"),
@@ -159,6 +168,9 @@ def update_step(step_id: int):
         measured_value=data.get("measured_value"),
         upper_limit=data.get("upper_limit"),
         lower_limit=data.get("lower_limit"),
+        site_count=data.get("site_count"),
+        site_number=data.get("site_number"),
+        site_failures=site_failures,
     )
     db.session.commit()
     return jsonify(step.to_dict())

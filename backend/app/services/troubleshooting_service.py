@@ -70,9 +70,10 @@ def create_session(
 
 def add_step(
     session_id: int,
-    action: str,
     result: str,
     user_id: Optional[int],
+    action: Optional[str] = None,
+    action_tags: Optional[str] = None,
     plan: Optional[str] = None,
     pin_number: Optional[str] = None,
     hb_observed: Optional[str] = None,
@@ -81,10 +82,14 @@ def add_step(
     measured_value: Optional[str] = None,
     upper_limit: Optional[str] = None,
     lower_limit: Optional[str] = None,
+    site_count: Optional[int] = None,
+    site_number: Optional[str] = None,
+    site_failures: Optional[str] = None,
 ) -> TroubleshootingStep:
     """
     Append an action→result step to an open session.
     PC failure observation fields are all optional.
+    At least one of action_tags or action must be provided.
     Does NOT commit — caller must call db.session.commit().
     """
     session = TroubleshootingSession.query.get(session_id)
@@ -93,12 +98,16 @@ def add_step(
     if not session.is_open:
         abort(400, description="Cannot add steps to a closed session.")
 
+    if not (action_tags and action_tags.strip()) and not (action and action.strip()):
+        abort(400, description="At least one action must be selected or a description provided.")
+
     def _s(v: Optional[str]) -> Optional[str]:
         return v.strip() if v and v.strip() else None
 
     step = TroubleshootingStep(
         session_id=session_id,
-        action=action.strip(),
+        action_tags=_s(action_tags),
+        action=_s(action),
         result=result.strip(),
         plan=_s(plan),
         pin_number=_s(pin_number),
@@ -108,6 +117,9 @@ def add_step(
         measured_value=_s(measured_value),
         upper_limit=_s(upper_limit),
         lower_limit=_s(lower_limit),
+        site_count=site_count,
+        site_number=_s(site_number),
+        site_failures=site_failures,
     )
     db.session.add(step)
 
@@ -200,6 +212,7 @@ def update_step(
     step_id: int,
     user_id: Optional[int],
     action: Optional[str] = None,
+    action_tags: Optional[str] = None,
     result: Optional[str] = None,
     plan: Optional[str] = None,
     pin_number: Optional[str] = None,
@@ -209,6 +222,9 @@ def update_step(
     measured_value: Optional[str] = None,
     upper_limit: Optional[str] = None,
     lower_limit: Optional[str] = None,
+    site_count: Optional[int] = None,
+    site_number: Optional[str] = None,
+    site_failures: Optional[str] = None,
 ) -> TroubleshootingStep:
     """
     Update editable fields on an existing step.
@@ -222,7 +238,8 @@ def update_step(
     def _s(v: Optional[str]) -> Optional[str]:
         return v.strip() if v and v.strip() else None
 
-    if action            is not None: step.action             = action.strip()
+    if action_tags       is not None: step.action_tags        = _s(action_tags)
+    if action            is not None: step.action             = _s(action)
     if result            is not None: step.result             = result.strip()
     if plan              is not None: step.plan               = _s(plan)
     if pin_number        is not None: step.pin_number         = _s(pin_number)
@@ -232,6 +249,9 @@ def update_step(
     if measured_value    is not None: step.measured_value     = _s(measured_value)
     if upper_limit       is not None: step.upper_limit        = _s(upper_limit)
     if lower_limit       is not None: step.lower_limit        = _s(lower_limit)
+    if site_count        is not None: step.site_count         = site_count
+    if site_number       is not None: step.site_number        = _s(site_number)
+    if site_failures     is not None: step.site_failures      = site_failures
 
     log_action(
         user_id=user_id,
