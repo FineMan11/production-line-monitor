@@ -12,12 +12,13 @@
 import { useState } from 'react'
 import { updateTester } from '../../services/dashboardService'
 
-const TESTER_TYPES = ['INVTG', 'ETS364', 'J750']
+const TESTER_TYPES = ['INTVG', 'ETS364', 'J750', 'ETS800', 'FLEX', 'STS']
 
 const HANDLER_BADGE = {
   JHT: 'bg-teal-100 text-teal-700',
   MT:  'bg-orange-100 text-orange-700',
   CAS: 'bg-pink-100 text-pink-700',
+  HT:  'bg-purple-100 text-purple-700',
 }
 
 // Extract the numeric suffix from a station name, e.g. "INVTG-03" → "03"
@@ -39,6 +40,7 @@ export default function StationEditModal({ tester, handlers = [], onClose, onSav
   const [type,       setType]      = useState(tester.tester_type)
   const [numStr,     setNumStr]    = useState(initialNum)
   const [plant,      setPlant]     = useState(tester.plant)
+  const [bay,        setBay]       = useState(tester.bay ?? 1)
   const [isActive,   setIsActive]  = useState(tester.is_active)
   const [handlerId,  setHandlerId] = useState(
     // Find which handler is currently docked to this tester
@@ -70,6 +72,7 @@ export default function StationEditModal({ tester, handlers = [], onClose, onSav
         name:        previewName,
         tester_type: type,
         plant:       Number(plant),
+        bay:         Number(plant) === 3 ? Number(bay) : null,
         is_active:   isActive,
         handler_id:  handlerId === '' ? null : Number(handlerId),
       }
@@ -172,7 +175,7 @@ export default function StationEditModal({ tester, handlers = [], onClose, onSav
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-gray-700">Plant</label>
               <div className="flex rounded-lg border border-gray-300 overflow-hidden">
-                {[1, 2].map((p) => (
+                {[1, 3].map((p) => (
                   <button
                     key={p}
                     type="button"
@@ -187,6 +190,28 @@ export default function StationEditModal({ tester, handlers = [], onClose, onSav
                 ))}
               </div>
             </div>
+
+            {/* Bay — only for Plant 3 */}
+            {plant === 3 && (
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-700">Bay</label>
+                <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+                  {[1, 2, 3].map((b) => (
+                    <button
+                      key={b}
+                      type="button"
+                      onClick={() => setBay(b)}
+                      className={`flex-1 py-2 text-xs font-medium transition
+                        ${bay === b
+                          ? 'bg-teal-600 text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+                    >
+                      Bay {b}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Handler Assignment */}
             <div className="flex flex-col gap-1">

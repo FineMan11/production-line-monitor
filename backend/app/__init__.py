@@ -56,11 +56,13 @@ def create_app(config_name: str = "development") -> Flask:
     from .api.maintenance import maintenance_bp
     from .api.admin import admin_bp
     from .api.troubleshooting import troubleshooting_bp
+    from .api.layout import layout_bp
     app.register_blueprint(dashboard_bp,       url_prefix="/api/dashboard")
     app.register_blueprint(tester_bp,          url_prefix="/api/testers")
     app.register_blueprint(maintenance_bp,     url_prefix="/api/maintenance")
     app.register_blueprint(admin_bp,           url_prefix="/api/admin")
     app.register_blueprint(troubleshooting_bp, url_prefix="/api/troubleshooting")
+    app.register_blueprint(layout_bp,          url_prefix="/api/layout")
 
     # -----------------------------------------------------------------
     # CLI commands
@@ -70,5 +72,11 @@ def create_app(config_name: str = "development") -> Flask:
         """Populate the database with initial roles, permissions, and admin user."""
         from .seed import seed_database
         seed_database()
+
+    @app.cli.command("resetstations")
+    def resetstations_command():
+        """Clear all testers/handlers and re-seed with the real production floor layout."""
+        from .reseed import reset_stations
+        reset_stations()
 
     return app

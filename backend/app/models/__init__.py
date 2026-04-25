@@ -15,10 +15,12 @@ from .tester import Tester, StatusHistory
 from .handler import Handler
 from .maintenance import MaintenanceLog
 from .troubleshooting import TroubleshootingSession, TroubleshootingStep
+from .layout import LayoutConfig
 
 __all__ = [
     "User", "Role", "Permission", "AuditLog",
     "Status", "Tester", "StatusHistory",
     "Handler", "MaintenanceLog",
     "TroubleshootingSession", "TroubleshootingStep",
+    "LayoutConfig",
 ]

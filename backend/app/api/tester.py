@@ -13,7 +13,7 @@ from app.models import Tester, Handler
 from app.services import status_service
 from app.utils.audit import log_action
 
-VALID_TESTER_TYPES = {"INVTG", "ETS364", "J750"}
+VALID_TESTER_TYPES = {"INTVG", "ETS364", "J750", "ETS800", "FLEX", "STS"}
 
 tester_bp = Blueprint("tester", __name__)
 
@@ -91,10 +91,17 @@ def edit_tester(tester_id: int):
 
     if "plant" in data:
         p = data["plant"]
-        if p not in (1, 2):
-            abort(400, description="'plant' must be 1 or 2.")
+        if p not in (1, 3):
+            abort(400, description="'plant' must be 1 or 3.")
         tester.plant = p
         changed["plant"] = p
+
+    if "bay" in data:
+        b = data["bay"]
+        if b is not None and b not in (1, 2, 3):
+            abort(400, description="'bay' must be 1, 2, 3, or null.")
+        tester.bay = b
+        changed["bay"] = b
 
     if "station_number" in data:
         tester.station_number = int(data["station_number"])

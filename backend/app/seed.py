@@ -142,30 +142,32 @@ def seed_database():
             db.session.add(t)
             plant1_testers.append(t)
 
-        # -- Plant 2: 42 stations ------------------------------------------
-        plant2_types = (
+        # -- Plant 3: 42 stations (3 bays × 14 stations) ------------------
+        plant3_types = (
             ["INVTG"]  * 10 +
             ["ETS364"] * 20 +
             ["J750"]   * 12
         )  # total = 42 — adjust distribution to match real floor layout
 
-        plant2_testers = []
-        for i, ttype in enumerate(plant2_types, start=1):
+        plant3_testers = []
+        for i, ttype in enumerate(plant3_types, start=1):
+            bay = 1 if i <= 14 else (2 if i <= 28 else 3)
             t = Tester(
-                name=f"T2-{i:02d}",
+                name=f"T3-{i:02d}",
                 tester_type=ttype,
-                plant=2,
+                plant=3,
+                bay=bay,
                 station_number=i,
                 current_status=status_running,
             )
             db.session.add(t)
-            plant2_testers.append(t)
+            plant3_testers.append(t)
 
         db.session.flush()
 
         # -- Initial StatusHistory (history is never empty) ----------------
         now = datetime.now(timezone.utc)
-        for tester in plant1_testers + plant2_testers:
+        for tester in plant1_testers + plant3_testers:
             sh = StatusHistory(
                 tester_id=tester.id,
                 status_id=status_running.id,
@@ -181,7 +183,7 @@ def seed_database():
             [("MT",  i) for i in range(1, 9)]  +   # MT-01 to MT-08
             [("CAS", i) for i in range(1, 7)]       # CAS-01 to CAS-06
         )
-        all_testers = plant1_testers + plant2_testers
+        all_testers = plant1_testers + plant3_testers
         # Shuffle testers so handler assignment is random
         tester_pool = random.sample(all_testers, len(all_testers))
         for idx, (htype, num) in enumerate(handler_defs):
@@ -194,7 +196,7 @@ def seed_database():
             )
             db.session.add(h)
 
-        print("  Created 4 statuses, 52 testers, 24 handlers (randomly assigned).")
+        print("  Created 4 statuses, 52 testers (Plant 1 + Plant 3 w/ bays), 24 handlers.")
 
     db.session.commit()
 

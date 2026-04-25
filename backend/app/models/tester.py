@@ -10,7 +10,9 @@ class Tester(db.Model):
     tester_type       = db.Column(db.String(20), nullable=False, index=True)
     # tester_type: "INVTG", "ETS364", or "J750"
     plant             = db.Column(db.Integer, nullable=False)
-    # plant: 1 (10 stations) or 2 (42 stations)
+    # plant: 1 (10 stations) or 3 (42 stations)
+    bay               = db.Column(db.Integer, nullable=True)
+    # bay: 1|2|3 for Plant 3, null for Plant 1
     station_number    = db.Column(db.Integer, nullable=False)
     # 1-based position within the plant — used for fixed-grid ordering
     current_status_id = db.Column(db.Integer, db.ForeignKey("statuses.id"), nullable=False)
@@ -31,6 +33,7 @@ class Tester(db.Model):
             "name": self.name,
             "tester_type": self.tester_type,
             "plant": self.plant,
+            "bay": self.bay,
             "station_number": self.station_number,
             "status": self.current_status.name,
             "status_color": self.current_status.color_code,

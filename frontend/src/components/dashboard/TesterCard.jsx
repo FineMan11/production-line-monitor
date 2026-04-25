@@ -26,15 +26,19 @@ import TroubleshootingModal from './TroubleshootingModal'
 import TroubleshootingHistoryModal from './TroubleshootingHistoryModal'
 
 const TYPE_BADGE = {
-  INVTG:  'bg-violet-100 text-violet-700',
+  INTVG:  'bg-violet-100 text-violet-700',
   ETS364: 'bg-blue-100 text-blue-700',
   J750:   'bg-amber-100 text-amber-700',
+  ETS800: 'bg-indigo-100 text-indigo-700',
+  FLEX:   'bg-emerald-100 text-emerald-700',
+  STS:    'bg-slate-100 text-slate-600',
 }
 
 const HANDLER_BADGE = {
   JHT: 'bg-teal-100 text-teal-700',
   MT:  'bg-orange-100 text-orange-700',
   CAS: 'bg-pink-100 text-pink-700',
+  HT:  'bg-purple-100 text-purple-700',
 }
 
 export default function TesterCard({
@@ -50,6 +54,7 @@ export default function TesterCard({
   onTesterEdited,
   onTroubleshootingUpdated,
   onDeviceUpdated,
+  dragHandleProps = null,
 }) {
   const { user } = useAuth()
   const isAdmin  = user?.role === 'admin'
@@ -110,8 +115,9 @@ export default function TesterCard({
     setDeviceEditMode(false)
   }
 
-  const borderClass  = STATUS_BORDER[tester.status_color] ?? 'border-gray-200'
-  const typeBadge    = TYPE_BADGE[tester.tester_type]       ?? 'bg-gray-100 text-gray-700'
+  const isOffline    = !handler
+  const borderClass  = isOffline ? 'border-gray-300' : (STATUS_BORDER[tester.status_color] ?? 'border-gray-200')
+  const typeBadge    = TYPE_BADGE[tester.tester_type] ?? 'bg-gray-100 text-gray-700'
   const handlerBadge = HANDLER_BADGE[handler?.handler_type] ?? 'bg-gray-100 text-gray-600'
 
   async function handleStatusSelect(statusName) {
@@ -146,9 +152,22 @@ export default function TesterCard({
   return (
     <>
       <div
-        className={`relative bg-white rounded-lg border-2 ${borderClass} shadow-sm p-3
-                    hover:shadow-md transition-all cursor-default`}
+        className={`relative rounded-lg border-2 ${borderClass} shadow-sm p-3
+                    hover:shadow-md transition-all cursor-default
+                    ${isOffline ? 'bg-gray-50' : 'bg-white'}`}
       >
+        {/* ── Drag handle (layout edit mode only) ── */}
+        {dragHandleProps && (
+          <div
+            {...dragHandleProps}
+            className="absolute top-1 left-1/2 -translate-x-1/2 text-gray-300 hover:text-gray-500
+                       cursor-grab active:cursor-grabbing select-none text-base leading-none px-2 py-0.5"
+            title="Drag to move to another bay"
+          >
+            ⠿
+          </div>
+        )}
+
         {/* ── Top row: name + menu button ── */}
         <div className="flex items-start justify-between gap-1">
           <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-mono font-semibold truncate ${typeBadge}`}
@@ -266,12 +285,19 @@ export default function TesterCard({
 
         {/* ── Status dot + label ── */}
         <div className="mt-1">
-          <span className={`inline-flex items-center gap-1 text-xs font-medium
-                            ${STATUS_LABEL[tester.status_color] ?? 'text-gray-600'}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[tester.status_color] ?? 'bg-gray-400'}
-                              ${openLog ? 'animate-pulse' : ''}`} />
-            {tester.status}
-          </span>
+          {isOffline ? (
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />
+              Offline
+            </span>
+          ) : (
+            <span className={`inline-flex items-center gap-1 text-xs font-medium
+                              ${STATUS_LABEL[tester.status_color] ?? 'text-gray-600'}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[tester.status_color] ?? 'bg-gray-400'}
+                                ${openLog ? 'animate-pulse' : ''}`} />
+              {tester.status}
+            </span>
+          )}
         </div>
 
         {/* ── Handler row ── */}

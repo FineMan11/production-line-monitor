@@ -168,7 +168,7 @@ export default function StepItem({ step, index, sessionType, onUpdated, formatTi
             {/* Shared Number — only when no sites selected */}
             {eSiteNums.length === 0 && (
               <div>
-                <label className="block text-xs text-gray-500 mb-0.5">Number</label>
+                <label className="block text-xs text-gray-500 mb-0.5">Number of Test</label>
                 <input type="number" step="any" min="0" value={ePin}
                   onChange={(e) => setEPin(e.target.value)} placeholder="e.g. 170.2"
                   className="w-full border border-gray-300 rounded px-2 py-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-blue-400" />
@@ -226,7 +226,7 @@ export default function StepItem({ step, index, sessionType, onUpdated, formatTi
                   <div key={n} className="border border-blue-100 rounded p-2 space-y-1.5">
                     <p className="text-xs font-semibold text-blue-700">Site {n}</p>
                     <div>
-                      <label className="block text-xs text-gray-500 mb-0.5">Number</label>
+                      <label className="block text-xs text-gray-500 mb-0.5">Number of Test</label>
                       <input type="number" step="any" min="0" value={eSiteFailures[n]?.pin ?? ''}
                         onChange={e => updateSiteField(n, 'pin', e.target.value)}
                         placeholder="e.g. 170.2"
