@@ -147,6 +147,26 @@ http://localhost
 
 ---
 
+## Releases & Version History
+
+All versions are tagged and available on [GitHub Releases](https://github.com/FineMan11/production-line-monitor/releases).
+
+| Version | Description | Status |
+|---------|-------------|--------|
+| [v0.1.0](https://github.com/FineMan11/production-line-monitor/releases/tag/v0.1.0) | Phase 1 — Dashboard (Flask/SQLite) | Released |
+| [v0.2.0](https://github.com/FineMan11/production-line-monitor/releases/tag/v0.2.0) | Phase 2 — Digital job sheets | Released |
+| [v0.3.0](https://github.com/FineMan11/production-line-monitor/releases/tag/v0.3.0) | Phase 3 — Full-stack rebuild + Troubleshooting Sessions | **Current** |
+| v0.4.0 | Phase 4 — JHT handler monitoring | Planned |
+| v1.0.0 | Official production launch | Planned |
+
+### Rolling back to a previous version
+```bash
+git checkout v0.2.0          # switch to any version
+docker-compose up -d --build  # rebuild containers for that version
+```
+
+---
+
 ## Documentation
 
 | Document | Description |
