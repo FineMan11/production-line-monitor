@@ -11,11 +11,33 @@ from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
 from app.extensions import db
 from app.models import Tester, Handler
 from app.services import status_service
+from app.services.troubleshooting_service import get_tester_analytics
 from app.utils.audit import log_action
 
 VALID_TESTER_TYPES = {"INTVG", "ETS364", "J750", "ETS800", "FLEX", "STS"}
 
 tester_bp = Blueprint("tester", __name__)
+
+
+@tester_bp.route("/<int:tester_id>", methods=["GET"])
+@jwt_required()
+def get_tester(tester_id: int):
+    """Return a single tester with its current handler."""
+    tester = Tester.query.get_or_404(tester_id)
+    return jsonify(tester.to_dict(include_handler=True))
+
+
+@tester_bp.route("/<int:tester_id>/analytics", methods=["GET"])
+@jwt_required()
+def get_analytics(tester_id: int):
+    """
+    Return aggregated troubleshooting analytics for a tester.
+    Includes summary counts, sessions by month, top action tags,
+    hard bin frequency, and the 20 most recent sessions with steps.
+    """
+    tester = Tester.query.get_or_404(tester_id)
+    analytics = get_tester_analytics(tester_id)
+    return jsonify({"tester": tester.to_dict(include_handler=True), **analytics})
 
 
 @tester_bp.route("/<int:tester_id>/status", methods=["PATCH"])

@@ -8,6 +8,7 @@ POST  /api/troubleshooting/<id>/steps       — Add a step to an open session
 PATCH /api/troubleshooting/<id>/close       — Close a session (body: {"solved": bool})
 """
 import json
+from datetime import datetime
 from flask import Blueprint, request, jsonify, abort
 from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
 
@@ -45,11 +46,21 @@ def list_sessions():
     date_str     = request.args.get("date") or None
     session_type = request.args.get("session_type") or None
 
+    since_str = request.args.get("since") or None
+    until_str = request.args.get("until") or None
+    try:
+        since_dt = datetime.fromisoformat(since_str) if since_str else None
+        until_dt = datetime.fromisoformat(until_str) if until_str else None
+    except ValueError:
+        abort(400, description="'since' and 'until' must be ISO-8601 datetime strings.")
+
     sessions = troubleshooting_service.get_sessions(
         tester_id=tester_id,
         open_only=open_only,
         date_str=date_str,
         session_type=session_type,
+        since_dt=since_dt,
+        until_dt=until_dt,
     )
     return jsonify(sessions)
 

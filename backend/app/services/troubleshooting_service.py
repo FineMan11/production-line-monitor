@@ -4,7 +4,8 @@ Troubleshooting Service
 Business logic for troubleshooting session CRUD.
 Called by route handlers. Callers are responsible for db.session.commit().
 """
-from datetime import datetime, timezone
+from collections import Counter
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from flask import abort
@@ -127,7 +128,7 @@ def add_step(
         user_id=user_id,
         action="add_troubleshooting_step",
         resource=f"troubleshooting_session:{session_id}",
-        details={"action": action[:80], "result": result[:80]},
+        details={"action": (action or "")[:80], "result": result[:80]},
     )
 
     return step
@@ -166,10 +167,13 @@ def get_sessions(
     open_only: bool = False,
     date_str: Optional[str] = None,
     session_type: Optional[str] = None,
+    since_dt: Optional[datetime] = None,
+    until_dt: Optional[datetime] = None,
 ) -> list:
     """
     Return sessions with optional filters, newest first.
     date_str format: "YYYY-MM-DD"
+    since_dt / until_dt: datetime bounds on started_at (inclusive / exclusive)
     """
     query = TroubleshootingSession.query
 
@@ -181,6 +185,12 @@ def get_sessions(
 
     if session_type:
         query = query.filter(TroubleshootingSession.session_type == session_type)
+
+    if since_dt is not None:
+        query = query.filter(TroubleshootingSession.started_at >= since_dt)
+
+    if until_dt is not None:
+        query = query.filter(TroubleshootingSession.started_at < until_dt)
 
     if date_str:
         try:
@@ -281,6 +291,88 @@ def delete_session(session_id: int, user_id: Optional[int]) -> None:
         resource=f"troubleshooting_session:{session_id}",
         details={"tester_id": session.tester_id, "hard_bin": session.hard_bin},
     )
+
+
+def get_tester_analytics(tester_id: int) -> dict:
+    """
+    Aggregate troubleshooting stats for a single tester.
+    Returns summary counts, sessions-by-month (last 12), top action tags,
+    hard bin frequency, and the 20 most recent sessions with steps.
+    """
+    sessions = (
+        TroubleshootingSession.query
+        .filter_by(tester_id=tester_id)
+        .order_by(TroubleshootingSession.started_at.desc())
+        .all()
+    )
+
+    # --- summary ---
+    upchuck = [s for s in sessions if s.session_type == "upchuck"]
+    jamming  = [s for s in sessions if s.session_type == "jamming"]
+    closed   = [s for s in sessions if not s.is_open]
+    solved   = [s for s in closed   if s.solved is True]
+    unsolved = [s for s in closed   if s.solved is False]
+    open_s   = [s for s in sessions if s.is_open]
+
+    summary = {
+        "total_sessions":    len(sessions),
+        "upchuck_sessions":  len(upchuck),
+        "jamming_sessions":  len(jamming),
+        "solved_sessions":   len(solved),
+        "unsolved_sessions": len(unsolved),
+        "open_sessions":     len(open_s),
+    }
+
+    # --- sessions by month (last 12 months) ---
+    now = datetime.now(timezone.utc)
+    months: dict[str, dict] = {}
+    for i in range(11, -1, -1):
+        raw = now.month - 1 - i          # zero-based month offset, may be negative
+        month = raw % 12 + 1             # wrap into 1–12
+        year  = now.year + raw // 12     # adjust year (Python // floors correctly)
+        key = f"{year:04d}-{month:02d}"
+        months[key] = {"month": key, "upchuck": 0, "jamming": 0}
+
+    for s in sessions:
+        key = s.started_at.strftime("%Y-%m")
+        if key in months:
+            months[key][s.session_type] += 1
+
+    sessions_by_month = list(months.values())
+
+    # --- top action tags (all steps across all sessions) ---
+    tag_counter: Counter = Counter()
+    all_steps = TroubleshootingStep.query.filter(
+        TroubleshootingStep.session_id.in_([s.id for s in sessions])
+    ).all() if sessions else []
+
+    for step in all_steps:
+        if step.action_tags:
+            for tag in step.action_tags.split(","):
+                tag = tag.strip()
+                if tag:
+                    tag_counter[tag] += 1
+
+    top_action_tags = [{"tag": tag, "count": cnt} for tag, cnt in tag_counter.most_common(10)]
+
+    # --- hard bin frequency (upchuck sessions only) ---
+    hb_counter: Counter = Counter()
+    for s in upchuck:
+        if s.hard_bin:
+            hb_counter[s.hard_bin] += 1
+
+    hard_bin_frequency = [{"hard_bin": hb, "count": cnt} for hb, cnt in sorted(hb_counter.items())]
+
+    # --- 20 most recent sessions with steps ---
+    recent_sessions = [s.to_dict(include_steps=True) for s in sessions[:20]]
+
+    return {
+        "summary": summary,
+        "sessions_by_month": sessions_by_month,
+        "top_action_tags": top_action_tags,
+        "hard_bin_frequency": hard_bin_frequency,
+        "recent_sessions": recent_sessions,
+    }
 
 
 def get_open_session_for_tester(tester_id: int) -> Optional[TroubleshootingSession]:

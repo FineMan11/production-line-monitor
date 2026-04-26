@@ -15,6 +15,7 @@
  *   onTesterEdited       (updatedTester) => void
  */
 import { useState, useRef, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { updateTesterStatus, updateTesterDevice } from '../../services/dashboardService'
 import { closeMaintenanceLog } from '../../services/maintenanceService'
@@ -198,6 +199,16 @@ export default function TesterCard({
                               rounded-lg shadow-md z-20 py-1
                               ${dropdownAlign === 'left' ? 'left-0' : 'right-0'}`}>
 
+                {/* View Details */}
+                <Link
+                  to={`/testers/${tester.id}`}
+                  className="block px-3 py-2 text-sm text-teal-700 hover:bg-teal-50 transition font-medium"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  View Details →
+                </Link>
+                <div className="border-t border-gray-100 mb-1" />
+
                 {/* Change Status (expands inline) */}
                 <button
                   onClick={() => setStatusPickerOpen((o) => !o)}
@@ -264,6 +275,13 @@ export default function TesterCard({
                       Start Troubleshooting
                     </button>
                   )}
+
+                  <button
+                    onClick={() => { setMenuOpen(false); setShowTroubleHistory(true) }}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+                  >
+                    Troubleshooting History
+                  </button>
 
                   {/* Edit Station — admin only */}
                   {isAdmin && (

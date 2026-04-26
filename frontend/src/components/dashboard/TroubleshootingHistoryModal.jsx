@@ -8,9 +8,80 @@
  *   tester   { id, name }
  *   onClose  () => void
  */
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { getSessions, getSession } from '../../services/troubleshootingService'
 import StepItem from './StepItem'
+
+const PERIODS = [
+  { key: 'all',   label: 'All' },
+  { key: 'hour',  label: 'Hour' },
+  { key: 'today', label: 'Today' },
+  { key: 'week',  label: 'Week' },
+  { key: 'month', label: 'Month' },
+  { key: 'shift', label: 'Shift' },
+]
+
+function getPeriodRange(period) {
+  const now = new Date()
+  const pad = (n) => String(n).padStart(2, '0')
+  const isoLocal = (d) => {
+    // Return ISO string adjusted for local timezone offset so the backend
+    // (which stores UTC) receives the correct boundary.
+    return d.toISOString()
+  }
+
+  if (period === 'all') return { since: null, until: null }
+
+  if (period === 'hour') {
+    const since = new Date(now.getTime() - 60 * 60 * 1000)
+    return { since: isoLocal(since), until: null }
+  }
+
+  if (period === 'today') {
+    const start = new Date(now)
+    start.setHours(0, 0, 0, 0)
+    const end = new Date(start)
+    end.setDate(end.getDate() + 1)
+    return { since: isoLocal(start), until: isoLocal(end) }
+  }
+
+  if (period === 'week') {
+    const since = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    return { since: isoLocal(since), until: null }
+  }
+
+  if (period === 'month') {
+    const since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+    return { since: isoLocal(since), until: null }
+  }
+
+  if (period === 'shift') {
+    const h = now.getHours()
+    const todayAt = (hh, mm = 0) => {
+      const d = new Date(now)
+      d.setHours(hh, mm, 0, 0)
+      return d
+    }
+    if (h >= 7 && h < 19) {
+      // Morning shift 07:00–19:00
+      return { since: isoLocal(todayAt(7)), until: isoLocal(todayAt(19)) }
+    } else if (h >= 19) {
+      // Night shift started today at 19:00
+      const end = new Date(now)
+      end.setDate(end.getDate() + 1)
+      end.setHours(7, 0, 0, 0)
+      return { since: isoLocal(todayAt(19)), until: isoLocal(end) }
+    } else {
+      // Early morning (00:00–07:00) — night shift from yesterday 19:00
+      const start = new Date(now)
+      start.setDate(start.getDate() - 1)
+      start.setHours(19, 0, 0, 0)
+      return { since: isoLocal(start), until: isoLocal(todayAt(7)) }
+    }
+  }
+
+  return { since: null, until: null }
+}
 
 function StatusBadge({ session }) {
   if (session.is_open)
@@ -111,13 +182,24 @@ export default function TroubleshootingHistoryModal({ tester, onClose }) {
   const [sessions, setSessions] = useState([])
   const [loading,  setLoading]  = useState(true)
   const [error,    setError]    = useState('')
+  const [period,   setPeriod]   = useState('all')
 
-  useEffect(() => {
-    getSessions({ tester_id: tester.id })
+  const fetchSessions = useCallback((p) => {
+    setLoading(true)
+    setError('')
+    const { since, until } = getPeriodRange(p)
+    const params = { tester_id: tester.id }
+    if (since) params.since = since
+    if (until) params.until = until
+    getSessions(params)
       .then((res) => setSessions(res.data))
       .catch(() => setError('Failed to load history.'))
       .finally(() => setLoading(false))
   }, [tester.id])
+
+  useEffect(() => {
+    fetchSessions(period)
+  }, [period, fetchSessions])
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
@@ -132,13 +214,35 @@ export default function TroubleshootingHistoryModal({ tester, onClose }) {
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
         </div>
 
+        {/* Period selector */}
+        <div className="flex items-center gap-1 px-4 py-2 border-b border-gray-100 flex-wrap">
+          {PERIODS.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setPeriod(key)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition ${
+                period === key
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+          {!loading && (
+            <span className="ml-auto text-xs text-gray-400">
+              {sessions.length} session{sessions.length !== 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+
         <div className="overflow-y-auto flex-1 p-4">
           {loading ? (
             <p className="text-sm text-gray-400">Loading…</p>
           ) : error ? (
             <p className="text-sm text-red-500">{error}</p>
           ) : sessions.length === 0 ? (
-            <p className="text-sm text-gray-400 italic">No troubleshooting sessions on record.</p>
+            <p className="text-sm text-gray-400 italic">No troubleshooting sessions for this period.</p>
           ) : (
             <div className="space-y-2">
               {sessions.map((s) => <SessionRow key={s.id} session={s} />)}

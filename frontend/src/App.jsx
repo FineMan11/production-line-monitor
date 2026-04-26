@@ -18,6 +18,7 @@ import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import MaintenancePage from './pages/MaintenancePage'
 import AdminPage from './pages/AdminPage'
+import TesterDetailPage from './pages/TesterDetailPage'
 
 export default function App() {
   return (
@@ -53,6 +54,16 @@ export default function App() {
             element={
               <ProtectedRoute requiredRole="admin">
                 <AdminPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Tester detail page — all authenticated users */}
+          <Route
+            path="/testers/:id"
+            element={
+              <ProtectedRoute>
+                <TesterDetailPage />
               </ProtectedRoute>
             }
           />

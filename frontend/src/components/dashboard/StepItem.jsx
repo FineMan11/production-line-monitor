@@ -450,13 +450,15 @@ export default function StepItem({ step, index, sessionType, onUpdated, formatTi
 
       {/* Action tags + description */}
       {step.action_tags && (
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1 mt-1">
           {parseTags(step.action_tags).map(tag => (
-            <span key={tag} className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">{tag}</span>
+            <span key={tag} className="px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 text-xs font-medium border border-teal-200">
+              {tag.trim()}
+            </span>
           ))}
         </div>
       )}
-      {step.action && <p className="text-gray-600 text-xs">{step.action}</p>}
+      {step.action && <p className="text-gray-600 text-xs mt-0.5">{step.action}</p>}
       {!step.action_tags && !step.action && (
         <p><span className="font-medium text-gray-700">Action:</span> —</p>
       )}
